@@ -2,6 +2,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
+import webpack from 'webpack';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // __dirname workaround for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -69,6 +73,9 @@ export default {
           to: path.resolve(__dirname, 'dist'),
         },
       ],
+    }),
+    new webpack.DefinePlugin({
+      'process.env.REACT_APP_API_URL': JSON.stringify(process.env.REACT_APP_API_URL),
     }),
   ],
 

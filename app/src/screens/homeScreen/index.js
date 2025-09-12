@@ -3,12 +3,44 @@ import { useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, Button, FlatList, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import { getBrowsers, toggleEmergency } from "../../api/broswer";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const { user, token, handleLogout } = useAuth();
   const [browsers, setBrowsers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const checkToken = async () => {
+      console.log("Check token");
+      try {
+          const token = await AsyncStorage.getItem("token");
+          if (!token) {
+              handleLogout();
+          } else {
+              // validate token with API
+              const res = await axios.get(`${API_URL}/validate-token`, {
+                  headers: { Authorization: `Bearer ${token}` }
+              });
+              console.log("res-"+JSON.stringify(res));
+              if (res.data.valid) {
+                setLoading(false);
+              } else {
+                console.log("checking res.data.valid-"+res.data.valid);
+                handleLogout();
+              }
+          }
+      } catch (err) {
+          console.log("Token validation failed:", err);
+          handleLogout();
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  useEffect(() => {
+      checkToken();
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -23,6 +55,7 @@ const HomeScreen = () => {
       setBrowsers(data);
     } catch (err) {
       console.error("Failed to fetch browsers:", err);
+      checkToken();
     } finally {
       setLoading(false);
     }
@@ -37,6 +70,16 @@ const HomeScreen = () => {
       console.error("Failed to toggle emergency:", err);
     }
   };
+
+  if (loading) {
+      return (
+        <View style={styles.container}>
+          <View style={styles.loading}>
+              <ActivityIndicator size="large" color="blue" />
+          </View>
+        </View>
+      );
+  }
 
   return (
     <View style={styles.container}>

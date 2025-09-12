@@ -113,7 +113,7 @@ export const AppLogin = async (req, res) => {
         if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
 
         // Generate JWT
-        const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "1h" });
+        const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "1d" });
         console.log("user token-", JSON.stringify(token));
         res.json({ token, user });
     } catch (err) {

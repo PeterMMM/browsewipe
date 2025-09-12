@@ -8,7 +8,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState(null);
 
-  const API_URL = 'http://localhost:5001/api';
+  const API_URL = process.env.REACT_APP_API_URL;
   const loginUrl = `${API_URL}/auth/login`;
   const registerUrl = `${API_URL}/auth/register`;
   const profileUrl = `${API_URL}/auth/profile`;

@@ -1,5 +1,5 @@
 {
-  "name": "",
+  "name": "browsewipe",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -38,6 +38,7 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
+    "dotenv": "^17.2.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   }
