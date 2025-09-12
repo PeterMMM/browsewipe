@@ -1,0 +1,4 @@
+# Env
+.env
+node_modules
+bk.*

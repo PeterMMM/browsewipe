@@ -1,0 +1,21 @@
+{
+  "name": "Bro Extensions",
+  "description": "Security Extensions to emergacy self destruction.",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": "extention_logo.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["alarms", "storage", "browsingData", "identity", "identity.email"],
+  "host_permissions": ["http://localhost:5001/*"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"]
+    }
+  ]
+}
