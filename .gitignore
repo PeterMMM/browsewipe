@@ -28,6 +28,8 @@ npm-debug.log
 .vscode/
 
 # Environment
+app/.env
+backend/.env
 .env.local
 .env.development.local
 .env.test.local

@@ -5,9 +5,10 @@
  * 2) Startup
  * 3) Shutdown idle
  */
-const API_URL = 'http://localhost:5001/api';
-const emergencyActionUrl = `${API_URL}/check-emergency-action`;
+const API_URL = process.env.REACT_APP_API_URL;
 
+const emergencyActionUrl = `${API_URL}/check-emergency-action`;
+console.log("emergencyActionUrl-"+emergencyActionUrl);
 /**
  * Handles the logic for checking the emergency action API and clearing data.
  */
@@ -37,7 +38,7 @@ const checkEmergencyAction = async () => {
                 'X-Broswer-Id': broswerId,
             },
         });
-        console.log("response-", JSON.stringify(response));
+
         const data = await response.json();
         console.log("Service Worker: API response data:", JSON.stringify(data));
 

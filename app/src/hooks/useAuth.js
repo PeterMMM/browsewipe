@@ -32,8 +32,6 @@ const handleLogin = async (email, password) => {
     setError(null);
     try {
         const data = await login(email, password);
-        console.log("data(login)-"+JSON.stringify(data));
-        // expected response: { token, user }
 
         setUser(data.user);
         setToken(data.token);

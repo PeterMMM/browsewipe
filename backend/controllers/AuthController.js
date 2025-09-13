@@ -8,17 +8,14 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
 export const Register = async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        console.log("(regsiter)req.body -",JSON.stringify(req.body));
-        console.log("name -",name);
-        console.log("email -",email);
-        console.log("password -",password);
+
         // Check if user already exists
         const existingUser = await User.findOne({ email });
-        console.log("existingUser -",JSON.stringify(existingUser));
+
         if (existingUser) return res.status(400).json({ error: "User already exists" });
 
         const newUser = new User({ name, email, password });
-        console.log("newUser -",JSON.stringify(newUser));
+
         await newUser.save();
 
         res.json({ message: "User registered successfully" });
@@ -33,16 +30,12 @@ export const Login = async (req, res) => {
         const broswerId = req.headers['x-broswer-id'];
         const broswerName = req.headers['user-agent'] || "Unknown";
 
-        console.log("req.body -",JSON.stringify(req.body));
-        console.log("email -",email);
-        console.log("password -",password);
-
         const user = await User.findOne({ email });
-        console.log("user exit-", JSON.stringify(user));
+
         if (!user) return res.status(400).json({ error: "User not found" });
 
         const validPassword = await bcrypt.compare(password, user.password);
-        console.log("user validPassword-", JSON.stringify(validPassword));
+
         if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
 
         // Check broswer already linked to user
@@ -59,7 +52,7 @@ export const Login = async (req, res) => {
 
         // Generate JWT
         const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "1h" });
-        console.log("user token-", JSON.stringify(token));
+
         res.json({ token, user });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -100,21 +93,17 @@ export const AppLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        console.log("req.body -",JSON.stringify(req.body));
-        console.log("email -",email);
-        console.log("password -",password);
-
         const user = await User.findOne({ email });
-        console.log("user exit-", JSON.stringify(user));
+
         if (!user) return res.status(400).json({ error: "User not found" });
 
         const validPassword = await bcrypt.compare(password, user.password);
-        console.log("user validPassword-", JSON.stringify(validPassword));
+
         if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
 
         // Generate JWT
-        const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "1h" });
-        console.log("user token-", JSON.stringify(token));
+        const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "1d" });
+
         res.json({ token, user });
     } catch (err) {
         res.status(500).json({ error: err.message });
