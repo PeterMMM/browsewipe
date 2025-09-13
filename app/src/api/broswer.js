@@ -5,7 +5,6 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export const getBrowsers = async (token) => {
     try {
         const url = `${API_URL}/browsers`;
-        console.log("Attempting to fetch browsers from:", url);
 
         const response = await axios.get(url, {
             headers: {

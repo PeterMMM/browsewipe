@@ -13,7 +13,6 @@ const App = () => {
   const registerUrl = `${API_URL}/auth/register`;
   const profileUrl = `${API_URL}/auth/profile`;
 
-
   const getBroswerId = async () => {
     const result = await chrome.storage.local.get("broswerId");
     return result.broswerId;
@@ -66,8 +65,6 @@ const App = () => {
       const data = await response.json();
 
       if (data.token) {
-        console.log("data.token-"+data.token);
-        console.log("data.user-"+JSON.stringify(data.user));
         await chrome.storage.local.set({ authToken: data.token });
         await chrome.storage.local.set({ username: data?.user?.name });
         setIsLoggedIn(true);
@@ -105,7 +102,7 @@ const App = () => {
       console.log("response(regsitser)"+JSON.stringify(response));
 
       const data = await response.json();
-      console.log("data(regsitser)"+JSON.stringify(data));
+
       if (response.ok) {
         setMessage('Registration successful! You can now log in.');
         setCurrentView('login');

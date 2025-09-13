@@ -12,7 +12,6 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(false);
 
   const checkToken = async () => {
-      console.log("Check token");
       try {
           const token = await AsyncStorage.getItem("token");
           if (!token) {
@@ -22,16 +21,15 @@ const HomeScreen = () => {
               const res = await axios.get(`${API_URL}/validate-token`, {
                   headers: { Authorization: `Bearer ${token}` }
               });
-              console.log("res-"+JSON.stringify(res));
+
               if (res.data.valid) {
                 setLoading(false);
               } else {
-                console.log("checking res.data.valid-"+res.data.valid);
                 handleLogout();
               }
           }
       } catch (err) {
-          console.log("Token validation failed:", err);
+          console.error("Token validation failed:", err);
           handleLogout();
       } finally {
           setLoading(false);

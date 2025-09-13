@@ -20,10 +20,10 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true, parameterLimit: 1
 app.use(cors());
 
 // Debugging middleware
-app.use((req, res, next) => {
+/*app.use((req, res, next) => {
     console.log(`${req.method} ${req.path}`);
     next();
-});
+}); */
 
 app.use('/api/auth/', authApiRoutes);
 app.use('/api/check-emergency-action',emergencyActionApiRoutes);

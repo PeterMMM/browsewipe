@@ -38,7 +38,7 @@ const checkEmergencyAction = async () => {
                 'X-Broswer-Id': broswerId,
             },
         });
-        console.log("response-", JSON.stringify(response));
+
         const data = await response.json();
         console.log("Service Worker: API response data:", JSON.stringify(data));
 
