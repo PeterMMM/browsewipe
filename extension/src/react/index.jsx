@@ -1,8 +1,6 @@
+import './index.css';
 import { createRoot } from 'react-dom/client';
-import App from './components/App';
-// Clear the existing HTML content
+import App from './App';
 
-
-// Render your React component instead
 const root = createRoot(document.getElementById('root'));
 root.render(<App />);
