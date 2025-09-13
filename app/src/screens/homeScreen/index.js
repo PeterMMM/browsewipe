@@ -96,6 +96,16 @@ const HomeScreen = () => {
       ) : (
         <>
           <Text style={styles.info}>Welcome back, {user?.name || "User"} 👋</Text>
+
+          <View style={styles.buttonContainer}>
+            <Button
+              title={loading ? "Refreshing..." : "Refresh Browser List"}
+              onPress={loadBrowsers}
+              disabled={loading}
+              color="#3d5afe"
+            />
+          </View>
+
           {loading ? (
             <ActivityIndicator size="large" color="blue" />
           ) : (
@@ -104,6 +114,8 @@ const HomeScreen = () => {
               keyExtractor={(item) => item._id.toString()}
               renderItem={({ item }) => (
                 <View style={styles.card}>
+                  <Text style={styles.profileInfo}>{item.profile_label || 'Unnamed Profile'}</Text>
+                  <Text style={styles.profileUuid}>UUID: {item.profile_uuid?.slice(0, 8)}...</Text>
                   <Text style={styles.browserName}>{item.broswer_name}</Text>
                   <Text style={styles.browserInfo}>Emergency Action: {item.emergency_action ? "Yes" : "No"}</Text>
                   <Button
@@ -114,7 +126,10 @@ const HomeScreen = () => {
               )}
             />
           )}
-          <Button title="Logout" onPress={handleLogout} color="red" />
+
+          <View style={styles.logoutContainer}>
+            <Button title="Logout" onPress={handleLogout} color="red" />
+          </View>
         </>
       )}
     </View>
@@ -161,13 +176,34 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   browserName: {
-    fontWeight: "bold",
-    fontSize: 18,
-    color: "#2a3d66",
+    fontSize: 12,
+    color: "#666",
+    marginTop: 8,
   },
   browserInfo: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#555",
+    marginTop: 4,
+  },
+  profileInfo: {
+    fontWeight: "bold",
+    fontSize: 20,
+    color: "#2a3d66",
+    marginBottom: 4,
+  },
+  profileUuid: {
+    fontSize: 11,
+    color: "#888",
+    fontFamily: "monospace",
+    marginBottom: 6,
+  },
+  buttonContainer: {
+    marginVertical: 15,
+    paddingHorizontal: 20,
+  },
+  logoutContainer: {
+    marginTop: 20,
+    marginBottom: 10,
   },
 });
 

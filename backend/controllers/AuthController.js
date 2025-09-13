@@ -28,7 +28,23 @@ export const Login = async (req, res) => {
     try {
         const { email, password } = req.body;
         const broswerId = req.headers['x-broswer-id'];
+        const profileUuid = req.headers['x-profile-uuid'];
+        const profileLabel = req.headers['x-profile-label'] || null;
         const broswerName = req.headers['user-agent'] || "Unknown";
+
+        // Validate required headers
+        if (!broswerId) {
+            return res.status(400).json({ error: "Browser ID is required" });
+        }
+        if (!profileUuid) {
+            return res.status(400).json({ error: "Profile UUID is required" });
+        }
+
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(profileUuid)) {
+            return res.status(400).json({ error: "Invalid profile UUID format" });
+        }
 
         const user = await User.findOne({ email });
 
@@ -38,22 +54,47 @@ export const Login = async (req, res) => {
 
         if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
 
-        // Check broswer already linked to user
-        let userBroswer = await UserBroswer.findOne({ user_id: user._id, broswer_id: broswerId });
-        if (!userBroswer) {
-            userBroswer = new UserBroswer({
+        // Sanitize profile label
+        const sanitizedLabel = profileLabel ?
+            profileLabel.replace(/[<>\"'&]/g, '').substring(0, 100) : null;
+
+        // Upsert browser profile with profile UUID
+        await UserBroswer.findOneAndUpdate(
+            {
                 user_id: user._id,
                 broswer_id: broswerId,
-                broswer_name: broswerName,
-            });
-            await userBroswer.save();
-            console.log("New broswer registered for user:", user.email);
-        }
+                profile_uuid: profileUuid
+            },
+            {
+                $set: {
+                    broswer_name: broswerName,
+                    profile_label: sanitizedLabel
+                }
+            },
+            {
+                upsert: true,
+                new: true
+            }
+        );
+
+        console.log("Profile login successful:", {
+            user: user.email,
+            broswerId: broswerId,
+            profileUuid: profileUuid,
+            profileLabel: sanitizedLabel
+        });
 
         // Generate JWT
         const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "1h" });
 
-        res.json({ token, user });
+        res.json({
+            token,
+            user,
+            profile: {
+                uuid: profileUuid,
+                label: sanitizedLabel
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -113,3 +154,100 @@ export const AppLogin = async (req, res) => {
 export const validateToken = async (req, res) => {
   return res.json({ valid: true, user: req.user });
 }
+
+export const updateProfileLabel = async (req, res) => {
+    try {
+        const { profileLabel } = req.body;
+        const userId = req.user._id;
+        const broswerId = req.headers['x-broswer-id'];
+        const profileUuid = req.headers['x-profile-uuid'];
+
+        if (!broswerId || !profileUuid) {
+            return res.status(400).json({ error: "Browser ID and Profile UUID are required" });
+        }
+
+        // Sanitize profile label
+        const sanitizedLabel = profileLabel ?
+            profileLabel.replace(/[<>\"'&]/g, '').substring(0, 100) : null;
+
+        const userBroswer = await UserBroswer.findOneAndUpdate(
+            {
+                user_id: userId,
+                broswer_id: broswerId,
+                profile_uuid: profileUuid
+            },
+            {
+                $set: { profile_label: sanitizedLabel }
+            },
+            { new: true }
+        );
+
+        if (!userBroswer) {
+            return res.status(404).json({ error: "Browser profile not found" });
+        }
+
+        res.json({
+            success: true,
+            profile: {
+                broswer_id: userBroswer.broswer_id,
+                uuid: userBroswer.profile_uuid,
+                label: userBroswer.profile_label
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const Logout = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const broswerId = req.headers['x-broswer-id'];
+        const profileUuid = req.headers['x-profile-uuid'];
+
+        // Validate required headers
+        if (!broswerId) {
+            return res.status(400).json({ error: "Browser ID is required" });
+        }
+        if (!profileUuid) {
+            return res.status(400).json({ error: "Profile UUID is required" });
+        }
+
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(profileUuid)) {
+            return res.status(400).json({ error: "Invalid profile UUID format" });
+        }
+
+        // Find and delete the browser profile record
+        const deletedBrowser = await UserBroswer.findOneAndDelete({
+            user_id: userId,
+            broswer_id: broswerId,
+            profile_uuid: profileUuid
+        });
+
+        if (!deletedBrowser) {
+            return res.status(404).json({ error: "Browser profile not found" });
+        }
+
+        console.log("Browser profile deleted on logout:", {
+            user_id: userId,
+            broswer_id: broswerId,
+            profile_uuid: profileUuid,
+            profile_label: deletedBrowser.profile_label
+        });
+
+        res.json({
+            success: true,
+            message: "Logged out successfully and browser data removed",
+            deletedProfile: {
+                broswer_id: deletedBrowser.broswer_id,
+                profile_uuid: deletedBrowser.profile_uuid,
+                profile_label: deletedBrowser.profile_label
+            }
+        });
+    } catch (err) {
+        console.error("Logout error:", err);
+        res.status(500).json({ error: "Server error during logout" });
+    }
+};
