@@ -1,7 +1,7 @@
 import express from 'express';
 
 import authMiddleware from '../auth/middleware/authMiddleware.js';
-import { AppLogin, Login, Profile, Register, validateToken, updateProfileLabel } from '../controllers/AuthController.js';
+import { AppLogin, Login, Logout, Profile, Register, validateToken, updateProfileLabel } from '../controllers/AuthController.js';
 
 const router = express.Router();
 
@@ -11,5 +11,6 @@ router.post('/register', Register);
 router.get('/profile', authMiddleware, Profile);
 router.get('/validate-token', authMiddleware, validateToken);
 router.put('/profile/label', authMiddleware, updateProfileLabel);
+router.post('/logout', authMiddleware, Logout);
 
 export default router;

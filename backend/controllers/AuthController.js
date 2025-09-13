@@ -198,3 +198,56 @@ export const updateProfileLabel = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+export const Logout = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const broswerId = req.headers['x-broswer-id'];
+        const profileUuid = req.headers['x-profile-uuid'];
+
+        // Validate required headers
+        if (!broswerId) {
+            return res.status(400).json({ error: "Browser ID is required" });
+        }
+        if (!profileUuid) {
+            return res.status(400).json({ error: "Profile UUID is required" });
+        }
+
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(profileUuid)) {
+            return res.status(400).json({ error: "Invalid profile UUID format" });
+        }
+
+        // Find and delete the browser profile record
+        const deletedBrowser = await UserBroswer.findOneAndDelete({
+            user_id: userId,
+            broswer_id: broswerId,
+            profile_uuid: profileUuid
+        });
+
+        if (!deletedBrowser) {
+            return res.status(404).json({ error: "Browser profile not found" });
+        }
+
+        console.log("Browser profile deleted on logout:", {
+            user_id: userId,
+            broswer_id: broswerId,
+            profile_uuid: profileUuid,
+            profile_label: deletedBrowser.profile_label
+        });
+
+        res.json({
+            success: true,
+            message: "Logged out successfully and browser data removed",
+            deletedProfile: {
+                broswer_id: deletedBrowser.broswer_id,
+                profile_uuid: deletedBrowser.profile_uuid,
+                profile_label: deletedBrowser.profile_label
+            }
+        });
+    } catch (err) {
+        console.error("Logout error:", err);
+        res.status(500).json({ error: "Server error during logout" });
+    }
+};

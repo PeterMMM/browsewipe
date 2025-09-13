@@ -10,6 +10,7 @@ const AuthenticatedView = ({
   updateProfileLabel,
   handleLogout,
   profileLabelInputRef,
+  isLoading,
 }) => (
   <div className="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg shadow-md">
     <h2 className="text-xl font-bold text-gray-800">Welcome {username}!</h2>
@@ -52,9 +53,10 @@ const AuthenticatedView = ({
     
     <button
       onClick={handleLogout}
-      className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300"
+      disabled={isLoading}
+      className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300"
     >
-      Logout
+      {isLoading ? 'Logging out...' : 'Logout'}
     </button>
   </div>
 );
@@ -171,6 +173,7 @@ const App = () => {
   const loginUrl = `${API_URL}/auth/login`;
   const registerUrl = `${API_URL}/auth/register`;
   const updateProfileLabelUrl = `${API_URL}/auth/profile/label`;
+  const logoutUrl = `${API_URL}/auth/logout`;
 
   /**
    * Get profile information
@@ -391,16 +394,67 @@ const App = () => {
 
   const handleLogout = async () => {
     try {
-      // Remove the token from storage
+      setIsLoading(true);
+      setMessage('Logging out...');
+
+      // Get authentication token and profile info
+      const { authToken } = await chrome.storage.local.get(['authToken']);
+      const profileInfo = await getProfileInfo();
+
+      if (authToken && profileInfo.browserId && profileInfo.profileUuid) {
+        try {
+          // Call backend logout API to remove browser data from MongoDB
+          const response = await fetch(logoutUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`,
+              'X-Broswer-Id': profileInfo.browserId,
+              'X-Profile-Uuid': profileInfo.profileUuid
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Logout API successful:', data);
+            setMessage('Logged out successfully. Browser data removed.');
+          } else {
+            const errorData = await response.json();
+            console.error('Logout API failed:', errorData);
+            setMessage('Logout completed, but server cleanup may have failed.');
+          }
+        } catch (apiError) {
+          console.error('Logout API network error:', apiError);
+          setMessage('Logout completed, but server cleanup failed due to network error.');
+        }
+      } else {
+        console.warn('Missing authentication data for logout API call');
+        setMessage('Logged out locally.');
+      }
+
+      // Always clear local storage regardless of API result
       await chrome.storage.local.remove(['authToken']);
       await chrome.storage.local.remove(['username']);
+      
+      // Update UI state
       setIsLoggedIn(false);
-      setMessage('You have been logged out.');
       setUsername(null);
-      setCurrentView('login'); // Reset view to login form
+      setCurrentView('login');
+      
+      console.log('Local logout completed for profile:', profileInfo.profileUuid);
+      
+      // Clear the loading message after a short delay
+      setTimeout(() => {
+        if (!isLoggedIn) {
+          setMessage('');
+        }
+      }, 3000);
+
     } catch (error) {
-      console.error('Failed to remove token:', error);
-      setMessage('Logout failed.');
+      console.error('Logout process failed:', error);
+      setMessage('Logout failed due to an unexpected error.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -425,6 +479,7 @@ const App = () => {
           updateProfileLabel={updateProfileLabel}
           handleLogout={handleLogout}
           profileLabelInputRef={profileLabelInputRef}
+          isLoading={isLoading}
         />
       ) : (
         currentView === 'login' ? (
