@@ -34,7 +34,7 @@ export const checkEmergencyAction = async (req, res) => {
         return res.status(200).json({
             message: record?.emergency_action ? "Clear all data!" : "No emergency action required.",
             emergency_action: record?.emergency_action || false,
-            profile_uuid: record?.profileUuid,
+            profile_uuid: record?.profile_uuid,
             profile_label: record?.profile_label
         });
     } catch (err) {
