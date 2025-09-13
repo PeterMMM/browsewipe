@@ -4,6 +4,7 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
 import webpack from 'webpack';
 import dotenv from 'dotenv';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 dotenv.config();
 
@@ -47,7 +48,7 @@ export default {
       },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader'],
       },
       {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
@@ -77,6 +78,7 @@ export default {
     new webpack.DefinePlugin({
       'process.env.REACT_APP_API_URL': JSON.stringify(process.env.REACT_APP_API_URL),
     }),
+    new MiniCssExtractPlugin({ filename: '[name].css' }),
   ],
 
   devServer: {
