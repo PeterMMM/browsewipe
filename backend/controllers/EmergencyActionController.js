@@ -1,19 +1,19 @@
-import UserBroswer from "../models/UserBroswer.js";
+import UserBrowser from "../models/UserBrowser.js";
 
 export const checkEmergencyAction = async (req, res) => {
-    const browserId = req.headers['x-broswer-id'];
+    const browserId = req.headers['x-browser-id'];
     const profileUuid = req.headers['x-profile-uuid'];
-    
+
     console.log("Received browserId:", browserId);
     console.log("Received profileUuid:", profileUuid);
-    
+
     if (!browserId) {
         return res.json({
             message: "Something wrong! Browser Id not exit! Contact to developer.",
             emergency_action: false
         });
     }
-    
+
     if (!profileUuid) {
         return res.json({
             message: "Something wrong! Profile UUID not exit! Contact to developer.",
@@ -24,13 +24,13 @@ export const checkEmergencyAction = async (req, res) => {
     console.log("Authenticated call to emergency endpoint, browserName:", browserName);
 
     try {
-        const record = await UserBroswer.findOne({
-            broswer_id: browserId,
+        const record = await UserBrowser.findOne({
+            browser_id: browserId,
             profile_uuid: profileUuid,
             user_id: req.user._id
         }).select("emergency_action profile_uuid profile_label");
         console.log("record: ", JSON.stringify(record));
-        
+
         return res.status(200).json({
             message: record?.emergency_action ? "Clear all data!" : "No emergency action required.",
             emergency_action: record?.emergency_action || false,
