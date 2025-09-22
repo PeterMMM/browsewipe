@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, Button, FlatList, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
-import { getBrowsers, toggleEmergency } from "../../api/broswer";
+import { getBrowsers, toggleEmergency } from "../../api/browser";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const HomeScreen = () => {
@@ -116,7 +116,7 @@ const HomeScreen = () => {
                 <View style={styles.card}>
                   <Text style={styles.profileInfo}>{item.profile_label || 'Unnamed Profile'}</Text>
                   <Text style={styles.profileUuid}>UUID: {item.profile_uuid?.slice(0, 8)}...</Text>
-                  <Text style={styles.browserName}>{item.broswer_name}</Text>
+                  <Text style={styles.browserName}>{item.browser_name}</Text>
                   <Text style={styles.browserInfo}>Emergency Action: {item.emergency_action ? "Yes" : "No"}</Text>
                   <Button
                     title={item.emergency_action ? "Disable Emergency" : "Enable Emergency"}

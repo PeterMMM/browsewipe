@@ -1,10 +1,13 @@
 import jwt from 'jsonwebtoken';
 import User from '../../models/User.js';
-const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
+
+const defaultSecretKey = "supersecretkey";
 
 const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(" ")[1];
+    const SECRET_KEY = process.env.JWT_SECRET || defaultSecretKey;
+
     if (!token) return res.status(401).json({ error: "Access denied" });
 
     try {
@@ -14,7 +17,7 @@ const authMiddleware = async (req, res, next) => {
         if (!user) {
             return res.status(401).json({ error: "Invalid token: user not found" });
         }
-
+        req.token = true;
         req.user = user;
         next();
     } catch (error) {

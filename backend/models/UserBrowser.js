@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 
-const UserBroswerSchema = new mongoose.Schema({
+const UserBrowserSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  broswer_id: {
+  browser_id: {
       type: String,
       required: true,
   },
-  broswer_name: {
+  browser_name: {
       type: String,
       default: null,
   },
@@ -24,5 +24,5 @@ const UserBroswerSchema = new mongoose.Schema({
   }
 });
 
-const UserBroswer = mongoose.model('UserBroswer', UserBroswerSchema);
-export default UserBroswer;
+const UserBrowser = mongoose.model('UserBrowser', UserBrowserSchema);
+export default UserBrowser;

@@ -224,7 +224,7 @@ const App = () => {
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${authToken}`,
-                            'X-Broswer-Id': updatedInfo.browserId,
+                            'X-Browser-Id': updatedInfo.browserId,
                             'X-Profile-Uuid': updatedInfo.profileUuid
                         },
                         body: JSON.stringify({ profileLabel: trimmedLabel })
@@ -322,7 +322,7 @@ const App = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Broswer-Id': profileInfo.browserId,
+                    'X-Browser-Id': profileInfo.browserId,
                     'X-Profile-Uuid': profileInfo.profileUuid,
                     'X-Profile-Label': profileInfo.profileLabel || ''
                 },
@@ -408,7 +408,7 @@ const App = () => {
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${authToken}`,
-                            'X-Broswer-Id': profileInfo.browserId,
+                            'X-Browser-Id': profileInfo.browserId,
                             'X-Profile-Uuid': profileInfo.profileUuid
                         }
                     });

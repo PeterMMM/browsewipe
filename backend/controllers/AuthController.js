@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js'
-import UserBroswer from '../models/UserBroswer.js';
+import UserBrowser from '../models/UserBrowser.js';
 
-const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
+const defaultSecretKey = "supersecretkey";
+const defaultExpireTime = "7d";
 
 export const Register = async (req, res) => {
     try {
@@ -15,7 +16,6 @@ export const Register = async (req, res) => {
         if (existingUser) return res.status(400).json({ error: "User already exists" });
 
         const newUser = new User({ name, email, password });
-
         await newUser.save();
 
         res.json({ message: "User registered successfully" });
@@ -27,13 +27,15 @@ export const Register = async (req, res) => {
 export const Login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const broswerId = req.headers['x-broswer-id'];
+        const browserId = req.headers['x-browser-id'];
         const profileUuid = req.headers['x-profile-uuid'];
         const profileLabel = req.headers['x-profile-label'] || null;
-        const broswerName = req.headers['user-agent'] || "Unknown";
+        const browserName = req.headers['user-agent'] || "Unknown";
+        const SECRET_KEY = process.env.JWT_SECRET || defaultSecretKey;
+        const EXPIRE_TIME = process.env.EXPIRE_TIME || defaultExpireTime;
 
         // Validate required headers
-        if (!broswerId) {
+        if (!browserId) {
             return res.status(400).json({ error: "Browser ID is required" });
         }
         if (!profileUuid) {
@@ -51,7 +53,6 @@ export const Login = async (req, res) => {
         if (!user) return res.status(400).json({ error: "User not found" });
 
         const validPassword = await bcrypt.compare(password, user.password);
-
         if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
 
         // Sanitize profile label
@@ -59,15 +60,15 @@ export const Login = async (req, res) => {
             profileLabel.replace(/[<>\"'&]/g, '').substring(0, 100) : null;
 
         // Upsert browser profile with profile UUID
-        await UserBroswer.findOneAndUpdate(
+        await UserBrowser.findOneAndUpdate(
             {
                 user_id: user._id,
-                broswer_id: broswerId,
+                browser_id: browserId,
                 profile_uuid: profileUuid
             },
             {
                 $set: {
-                    broswer_name: broswerName,
+                    browser_name: browserName,
                     profile_label: sanitizedLabel
                 }
             },
@@ -79,13 +80,14 @@ export const Login = async (req, res) => {
 
         console.log("Profile login successful:", {
             user: user.email,
-            broswerId: broswerId,
+            browserId: browserId,
             profileUuid: profileUuid,
             profileLabel: sanitizedLabel
         });
 
         // Generate JWT
-        const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "1h" });
+        console.log("EXPIRE_TIME(login) - " + EXPIRE_TIME);
+        const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: EXPIRE_TIME });
 
         res.json({
             token,
@@ -103,6 +105,7 @@ export const Login = async (req, res) => {
 export const Profile = async (req, res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(" ")[1];
+    const SECRET_KEY = process.env.JWT_SECRET || defaultSecretKey;
 
     if (!token) return res.status(401).json({ error: "Access denied" });
 
@@ -122,9 +125,9 @@ export const refreshToken = async (req, res) => {
     }
 
     try {
-        const decoded = jwt.sign(refreshToken, processs.env.JWT_SECRET);
-        const accessToken = jwt.sign( userId, decoded.user_id )
-        return res.json({ accessToken});
+        const decoded = jwt.verify(refreshToken, SECRET_KEY);
+        const accessToken = jwt.sign({ user_id: decoded.user_id }, SECRET_KEY, { expiresIn: EXPIRE_TIME });
+        return res.json({ accessToken });
     } catch (error) {
         return res.status(401).json({ error: "Invalid refresh token."});
     }
@@ -133,17 +136,19 @@ export const refreshToken = async (req, res) => {
 export const AppLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const SECRET_KEY = process.env.JWT_SECRET || defaultSecretKey;
+        const EXPIRE_TIME = process.env.EXPIRE_TIME || defaultExpireTime;
 
         const user = await User.findOne({ email });
 
         if (!user) return res.status(400).json({ error: "User not found" });
 
         const validPassword = await bcrypt.compare(password, user.password);
-
         if (!validPassword) return res.status(400).json({ error: "Invalid credentials" });
 
         // Generate JWT
-        const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "1d" });
+        console.log("EXPIRE_TIME(app login) - " + EXPIRE_TIME);
+        const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: EXPIRE_TIME });
 
         res.json({ token, user });
     } catch (err) {
@@ -152,17 +157,19 @@ export const AppLogin = async (req, res) => {
 };
 
 export const validateToken = async (req, res) => {
-  return res.json({ valid: true, user: req.user });
+    if (req.token && req.user) {
+        return res.status(200).json({ token: req.token, user: req.user });
+    }
 }
 
 export const updateProfileLabel = async (req, res) => {
     try {
         const { profileLabel } = req.body;
         const userId = req.user._id;
-        const broswerId = req.headers['x-broswer-id'];
+        const browserId = req.headers['x-browser-id'];
         const profileUuid = req.headers['x-profile-uuid'];
 
-        if (!broswerId || !profileUuid) {
+        if (!browserId || !profileUuid) {
             return res.status(400).json({ error: "Browser ID and Profile UUID are required" });
         }
 
@@ -170,10 +177,10 @@ export const updateProfileLabel = async (req, res) => {
         const sanitizedLabel = profileLabel ?
             profileLabel.replace(/[<>\"'&]/g, '').substring(0, 100) : null;
 
-        const userBroswer = await UserBroswer.findOneAndUpdate(
+        const userBrowser = await UserBrowser.findOneAndUpdate(
             {
                 user_id: userId,
-                broswer_id: broswerId,
+                browser_id: browserId,
                 profile_uuid: profileUuid
             },
             {
@@ -182,16 +189,16 @@ export const updateProfileLabel = async (req, res) => {
             { new: true }
         );
 
-        if (!userBroswer) {
+        if (!userBrowser) {
             return res.status(404).json({ error: "Browser profile not found" });
         }
 
         res.json({
             success: true,
             profile: {
-                broswer_id: userBroswer.broswer_id,
-                uuid: userBroswer.profile_uuid,
-                label: userBroswer.profile_label
+                browser_id: userBrowser.browser_id,
+                uuid: userBrowser.profile_uuid,
+                label: userBrowser.profile_label
             }
         });
     } catch (err) {
@@ -202,11 +209,11 @@ export const updateProfileLabel = async (req, res) => {
 export const Logout = async (req, res) => {
     try {
         const userId = req.user._id;
-        const broswerId = req.headers['x-broswer-id'];
+        const browserId = req.headers['x-browser-id'];
         const profileUuid = req.headers['x-profile-uuid'];
 
         // Validate required headers
-        if (!broswerId) {
+        if (!browserId) {
             return res.status(400).json({ error: "Browser ID is required" });
         }
         if (!profileUuid) {
@@ -220,9 +227,9 @@ export const Logout = async (req, res) => {
         }
 
         // Find and delete the browser profile record
-        const deletedBrowser = await UserBroswer.findOneAndDelete({
+        const deletedBrowser = await UserBrowser.findOneAndDelete({
             user_id: userId,
-            broswer_id: broswerId,
+            browser_id: browserId,
             profile_uuid: profileUuid
         });
 
@@ -232,7 +239,7 @@ export const Logout = async (req, res) => {
 
         console.log("Browser profile deleted on logout:", {
             user_id: userId,
-            broswer_id: broswerId,
+            browser_id: browserId,
             profile_uuid: profileUuid,
             profile_label: deletedBrowser.profile_label
         });
@@ -241,7 +248,7 @@ export const Logout = async (req, res) => {
             success: true,
             message: "Logged out successfully and browser data removed",
             deletedProfile: {
-                broswer_id: deletedBrowser.broswer_id,
+                browser_id: deletedBrowser.browser_id,
                 profile_uuid: deletedBrowser.profile_uuid,
                 profile_label: deletedBrowser.profile_label
             }

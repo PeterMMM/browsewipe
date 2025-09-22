@@ -8,7 +8,9 @@
 const API_URL = process.env.REACT_APP_API_URL;
 
 const emergencyActionUrl = `${API_URL}/check-emergency-action`;
+const validateTokenUrl = `${API_URL}/auth/validate-token`;
 console.log("emergencyActionUrl-"+emergencyActionUrl);
+console.log("validateTokenUrl-"+validateTokenUrl);
 
 /**
  * Generate or retrieve profile UUID
@@ -39,11 +41,11 @@ const getProfileLabel = async () => {
 const getProfileInfo = async () => {
     const profileUuid = await getOrCreateProfileUuid();
     const profileLabel = await getProfileLabel();
-    
+
     // Get browser ID from localStorage
     const browserIdResult = await chrome.storage.local.get('browserId');
     const browserId = browserIdResult.browserId || chrome.runtime.id;
-    
+
     return {
         profileUuid,
         profileLabel,
@@ -80,7 +82,7 @@ const checkEmergencyAction = async () => {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
-                'X-Broswer-Id': profileInfo.browserId,
+                'X-Browser-Id': profileInfo.browserId,
                 'X-Profile-Uuid': profileInfo.profileUuid,
             },
         });
@@ -114,18 +116,24 @@ const checkEmergencyAction = async () => {
 // Listen for when the browser starts up
 chrome.runtime.onStartup.addListener(() => {
     console.log("Service Worker: Browser startup detected.");
-    updateBrowserId();
-    checkEmergencyAction();
+    updateBrowserBackgroundProcess();
 });
 
 // Listen for when the extension is installed or updated (which acts like a reload)
 chrome.runtime.onInstalled.addListener(() => {
     console.log("Service Worker: Extension installed or reloaded.");
-    updateBrowserId();
-    checkEmergencyAction();
+    updateBrowserBackgroundProcess();
 });
 
-const updateBrowserId = async () => {
+const updateBrowserBackgroundProcess = async () => {
+    let isTokenValid = await checkTokenValidation();
+    console.log("isTokenValid -"+isTokenValid);
+    if (!isTokenValid) {
+        console.log("Service Worker: Invalid token detected. Logging out...");
+        await chrome.storage.local.remove(['profileUuid', 'profileLabel', 'browserId', 'authToken', 'username']);
+        return;
+    }
+
     let { browserId } = await chrome.storage.local.get("browserId");
     if (!browserId) {
         browserId = chrome.runtime.id;
@@ -134,7 +142,44 @@ const updateBrowserId = async () => {
     } else {
         console.log("Using existing browser ID:", browserId);
     }
-    
+
     // Initialize profile UUID as well
     await getOrCreateProfileUuid();
+    await checkEmergencyAction();
+}
+
+// Check Token Validation and logout if token expire
+const checkTokenValidation = async () => {
+    console.log("Service Worker: Start token check");
+    const result = await chrome.storage.local.get(['authToken']);
+    const token = result.authToken ?? null;
+    console.log("Service Worker: client token", token);
+
+    if (!token) {
+        console.error('Service Worker: No auth token available. Cannot call Token validation API.');
+        return false;
+    }
+    try {
+        const response = await fetch(validateTokenUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            console.error("Service Worker: Token validation failed with status:", response.status);
+            return false;
+        }
+
+        const data = await response.json();
+        console.log("Service Worker: Check Token Validation response:", JSON.stringify(data));
+        console.log("Service Worker: data.token response:", data.token);
+
+        return data.token === true;
+    } catch (error) {
+        console.error("Service Worker: Network or server error during token validation:", error);
+        return false;
+    }
 }

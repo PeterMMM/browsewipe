@@ -1,17 +1,16 @@
-import UserBroswer from "../models/UserBroswer.js";
+import UserBrowser from "../models/UserBrowser.js";
 
-export const broswersList = async (req, res) => {
+export const browsersList = async (req, res) => {
     console.log("Hit browserUser list check api");
     try {
-        const userId = req.user._id; // from JWT payload
-
-        const browsers = await UserBroswer.find({ user_id: userId }).sort({ createdAt: -1 });
+        const userId = req.user._id;
+        const browsers = await UserBrowser.find({ user_id: userId }).sort({ createdAt: -1 });
 
         // Format response to include profile information
         const profileList = browsers.map(browser => ({
             _id: browser._id,
-            broswer_id: browser.broswer_id,
-            broswer_name: browser.broswer_name,
+            browser_id: browser.browser_id,
+            browser_name: browser.browser_name,
             profile_uuid: browser.profile_uuid,
             profile_label: browser.profile_label || `Profile ${browser.profile_uuid?.slice(0, 8) || 'Unknown'}`,
             emergency_action: browser.emergency_action,
@@ -26,12 +25,12 @@ export const broswersList = async (req, res) => {
     }
 }
 
-export const updateBroswerEmergencyAction = async (req, res) => {
+export const updateBrowserEmergencyAction = async (req, res) => {
     try {
         const browserId = req.params.id;
-        const userId = req.user._id; // from auth middleware
+        const userId = req.user._id;
 
-        const browser = await UserBroswer.findOne({
+        const browser = await UserBrowser.findOne({
             _id: browserId,
             user_id: userId,
         });
@@ -48,7 +47,7 @@ export const updateBroswerEmergencyAction = async (req, res) => {
             message: `Emergency action ${browser.emergency_action ? 'enabled' : 'disabled'} for profile`,
             browser: {
                 _id: browser._id,
-                broswer_id: browser.broswer_id,
+                browser_id: browser.browser_id,
                 profile_uuid: browser.profile_uuid,
                 profile_label: browser.profile_label,
                 emergency_action: browser.emergency_action
