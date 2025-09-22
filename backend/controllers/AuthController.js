@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js'
 import UserBrowser from '../models/UserBrowser.js';
 
+const defaultSecretKey = "supersecretkey";
+const defaultExpireTime = "7d";
+
 export const Register = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -28,8 +31,8 @@ export const Login = async (req, res) => {
         const profileUuid = req.headers['x-profile-uuid'];
         const profileLabel = req.headers['x-profile-label'] || null;
         const browserName = req.headers['user-agent'] || "Unknown";
-        const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
-        const EXPIRE_TIME = process.env.EXPIRE_TIME || "7d";
+        const SECRET_KEY = process.env.JWT_SECRET || defaultSecretKey;
+        const EXPIRE_TIME = process.env.EXPIRE_TIME || defaultExpireTime;
 
         // Validate required headers
         if (!browserId) {
@@ -102,7 +105,7 @@ export const Login = async (req, res) => {
 export const Profile = async (req, res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(" ")[1];
-    const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
+    const SECRET_KEY = process.env.JWT_SECRET || defaultSecretKey;
 
     if (!token) return res.status(401).json({ error: "Access denied" });
 
@@ -122,8 +125,8 @@ export const refreshToken = async (req, res) => {
     }
 
     try {
-        const decoded = jwt.sign(refreshToken, process.env.JWT_SECRET);
-        const accessToken = jwt.sign(userId, decoded.user_id);
+        const decoded = jwt.verify(refreshToken, SECRET_KEY);
+        const accessToken = jwt.sign({ user_id: decoded.user_id }, SECRET_KEY, { expiresIn: EXPIRE_TIME });
         return res.json({ accessToken });
     } catch (error) {
         return res.status(401).json({ error: "Invalid refresh token."});
@@ -133,8 +136,8 @@ export const refreshToken = async (req, res) => {
 export const AppLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
-        const EXPIRE_TIME = process.env.EXPIRE_TIME || "7d";
+        const SECRET_KEY = process.env.JWT_SECRET || defaultSecretKey;
+        const EXPIRE_TIME = process.env.EXPIRE_TIME || defaultExpireTime;
 
         const user = await User.findOne({ email });
 
